@@ -47,7 +47,7 @@ Ten entries ship pre-seeded — nine coding agents and a plain shell.
 |------|---------|--------|------|----------|--------------|
 | `claude` | `claude` | `--resume {id}` | `--resume {id} --fork-session` | **pinned** (`--session-id {id}`) | `--settings` arg patch (`claude.json`) |
 | `codex` | `codex` | `resume --last` | `fork --last` | id-less (`resume_latest`) | `config_merges` → `~/.codex/hooks.json` |
-| `antigravity` | `agy` | `--continue` | — (none) | id-less (`resume_latest`) | `config_merges` → `~/.gemini/settings.json` |
+| `antigravity` | `agy` | `--continue` | — (none) | id-less (`resume_latest`) | `config_merges` → `~/.gemini/config/hooks.json` |
 | `opencode` | `opencode` | `--continue` | `--continue --fork` | id-less (`resume_latest`) | `external_files` → `~/.config/opencode/plugin/` |
 | `aider` | `aider` | `--restore-chat-history` | — (none) | id-less (`resume_latest`) | `--notifications-command` arg patch (blocked only) |
 | `copilot` | `copilot` | `--continue` | — (none) | id-less (`resume_latest`) | `external_files` → `~/.copilot/hooks/` |
@@ -167,12 +167,9 @@ embedded hook assets live in
     (event/command/matcher/timeout) and refuses to load the whole config file on a
     fifth, so `kimi-hooks.toml` must never grow one (a test pins this).
     *Experimental.*
-  - `antigravity` (`agy`): merged into the shared `~/.gemini/settings.json` (agy
-    adopted claude's hook schema — PreToolUse/PostToolUse→working,
-    Notification→blocked, Stop→done; no UserPromptSubmit, so working fires at the
-    first tool call). PostToolUse is the edge out of blocked: no agent here has a
-    "permission granted" event, so the tool completing is the first thing said
-    once the prompt is answered.
+  - `antigravity` (`agy`): merged into the global `~/.gemini/config/hooks.json`
+    under a top-level `thurbox` key (PreInvocation→working, PreToolUse on ask_*→blocked,
+    PostToolUse→working, Stop→done). Hook commands emit a JSON object on stdout.
 - **`external_files` (drop a standalone managed file into the agent's config
   dir)** — refused if a non-managed file already exists there (the agent goes
   *unreported*, never *broken*).

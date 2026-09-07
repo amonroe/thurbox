@@ -147,11 +147,10 @@ pub const AGENT_HOOK_COVERAGE: &[AgentHookCoverage] = &[
     },
     AgentHookCoverage {
         agent: "antigravity",
-        states: &["working", "blocked", "done", "idle"],
+        states: &["working", "blocked", "done"],
         delivery: HookDelivery::ConfigMerge,
-        hook_file: Some("~/.gemini/settings.json"),
-        // agy adopted claude's schema, including the text match.
-        blocked_is_heuristic: true,
+        hook_file: Some("~/.gemini/config/hooks.json"),
+        blocked_is_heuristic: false,
     },
     AgentHookCoverage {
         agent: "opencode",
@@ -1550,21 +1549,21 @@ mod tests {
     }
 
     #[test]
-    fn claude_and_antigravity_are_flagged_as_matching_notification_text() {
+    fn claude_and_grok_are_flagged_as_matching_notification_text() {
         // These match a notification's `message` for *permission*/*approval*, so a
         // reworded upstream notification stops `blocked` silently. A consumer
         // has to be able to see that from the data. kimi is the counter-case
         // that makes the flag worth publishing: it has a real
         // `PermissionRequest` event, so its silence about `blocked` means the
         // agent is not blocked rather than "the wording may have moved".
-        for name in ["claude", "antigravity", "grok"] {
+        for name in ["claude", "grok"] {
             let c = AGENT_HOOK_COVERAGE
                 .iter()
                 .find(|c| c.agent == name)
                 .expect("covered");
             assert!(c.blocked_is_heuristic, "{name}");
         }
-        for name in ["opencode", "copilot", "codex", "vibe", "kimi"] {
+        for name in ["opencode", "copilot", "codex", "vibe", "kimi", "antigravity"] {
             let c = AGENT_HOOK_COVERAGE
                 .iter()
                 .find(|c| c.agent == name)

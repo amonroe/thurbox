@@ -632,7 +632,7 @@ mod tests {
             "vibe has no permission/notification hook, so blocked is not reported"
         );
 
-        // antigravity (agy) shares gemini's ~/.gemini/settings.json for hooks.
+        // antigravity (agy) loads global hooks from ~/.gemini/config/hooks.json.
         let antigravity = def
             .config_merges
             .iter()
@@ -644,17 +644,10 @@ mod tests {
         // The antigravity payload is valid JSON and carries the prune marker.
         let payload: serde_json::Value =
             serde_json::from_str(ANTIGRAVITY_HOOKS).expect("antigravity payload is valid JSON");
-        // agy 1.0.9 adopted claude's hook schema; guard against a regression back
-        // to the gemini-era `BeforeTool`/`AfterAgent` names (which agy never fires,
-        // so working/done would silently stop reporting).
-        for event in ["SessionStart", "PreToolUse", "Notification", "Stop"] {
-            assert!(
-                payload["hooks"][event].is_array(),
-                "antigravity hook event {event} missing"
-            );
-        }
-        assert!(payload["hooks"]["BeforeTool"].is_null());
-        assert!(payload["hooks"]["AfterAgent"].is_null());
+        assert!(payload["thurbox"]["PreInvocation"].is_array());
+        assert!(payload["thurbox"]["PreToolUse"].is_array());
+        assert!(payload["thurbox"]["PostToolUse"].is_array());
+        assert!(payload["thurbox"]["Stop"].is_array());
         assert!(ANTIGRAVITY_HOOKS.contains("thurbox-cli session signal"));
 
         // copilot drops a managed standalone file into ~/.copilot/hooks/ (guarded
@@ -948,7 +941,6 @@ mod tests {
     fn only_a_permission_notification_signals_blocked() {
         for (agent, payload) in [
             ("claude", CLAUDE_SETTINGS),
-            ("antigravity", ANTIGRAVITY_HOOKS),
             ("grok", GROK_HOOKS),
         ] {
             assert_eq!(

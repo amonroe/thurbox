@@ -174,7 +174,7 @@ breadcrumb: 'Agent hooks'
               </tr>
               <tr>
                 <td>antigravity</td>
-                <td>&#x2713;</td>
+                <td>&mdash;</td>
                 <td>&#x2713;</td>
                 <td>&#x2713;</td>
                 <td>&#x2713;</td>
@@ -289,24 +289,21 @@ breadcrumb: 'Agent hooks'
               <strong>antigravity</strong>
               &mdash; the
               <code>agy</code>
-              CLI loads hooks from its shared
-              <code>~/.gemini/settings.json</code>
+              CLI loads global hooks from
+              <code>~/.gemini/config/hooks.json</code>
               , so Thurbox
               <strong>JSON-merges</strong>
-              its entries in without clobbering your settings.
-              <code>agy</code>
-              adopted claude's hook schema (verified against agy 1.0.9), so the mapping mirrors
-              claude:
-              <code>SessionStart</code>
-              &rarr; idle,
+              its entries in under a top-level <code>thurbox</code> key without clobbering your hooks.
+              Events:
+              <code>PreInvocation</code>
+              &rarr; working,
               <code>PreToolUse</code>
+              (matching <code>ask_.*</code>) &rarr; blocked,
+              <code>PostToolUse</code>
               &rarr; working,
               <code>Stop</code>
-              &rarr; done, and
-              <code>Notification</code>
-              &rarr; blocked (permission/approval prompts only). It has no
-              <code>UserPromptSubmit</code>
-              , so working is signaled at the first tool call.
+              &rarr; done.
+              Hook commands emit a valid JSON object on stdout (<code>{"decision": "allow"}</code> or <code>{}</code>).
             </li>
             <li>
               <strong>aider</strong>
@@ -478,7 +475,7 @@ breadcrumb: 'Agent hooks'
               </tr>
               <tr>
                 <td>antigravity</td>
-                <td><code>~/.gemini/settings.json</code></td>
+                <td><code>~/.gemini/config/hooks.json</code></td>
                 <td>reversible JSON-merge of our entries</td>
               </tr>
               <tr>

@@ -73,7 +73,7 @@ fn remote_asset_for(agent: &str) -> Option<RemoteHookAsset> {
         }),
         "antigravity" => Some(RemoteHookAsset {
             kind: RemoteAssetKind::MergeJson,
-            remote_path: "~/.gemini/settings.json",
+            remote_path: "~/.gemini/config/hooks.json",
             requires_dir: "~/.gemini",
             payload: builtin_hooks::ANTIGRAVITY_HOOKS,
         }),

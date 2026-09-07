@@ -577,7 +577,7 @@ config dir:
 | opencode | `~/.config/opencode/plugin/thurbox-status.js` | managed plugin file |
 | codex | `~/.codex/hooks.json` | reversible JSON-merge of thurbox's entries |
 | vibe | `~/.vibe/hooks.toml` | managed file (refused if you already have one) |
-| antigravity | `~/.gemini/settings.json` | reversible JSON-merge of thurbox's entries |
+| antigravity | `~/.gemini/config/hooks.json` | reversible JSON-merge of thurbox's entries |
 
 The home dir is `~/.config/thurbox/hooks` on a release build and
 `~/.config/thurbox-dev/hooks` on a dev build. Because claude *merges* the
@@ -699,7 +699,7 @@ name = "claude"
 append_args = ["--settings", "{home}/claude.json"]
 
 [[config_merges]]               # reversibly deep-merge into an agent's own
-path = "~/.gemini/settings.json"  #   SHARED config file (never clobbered)
+path = "~/.gemini/config/hooks.json"  #   SHARED config file (never clobbered)
 source = "antigravity-hooks.json"  # objects recurse, arrays union; uninstall prunes
 requires_dir = "~/.gemini"      #   exactly our entries (by marker). no-op write
                                 #   when unchanged; malformed target soft-skipped

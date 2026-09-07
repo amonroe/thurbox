@@ -153,23 +153,19 @@ path = "~/.copilot/hooks/thurbox-status.json"
 source = "copilot-hooks.json"
 requires_dir = "~/.copilot"
 
-# antigravity (the `agy` CLI, the Gemini CLI successor) loads hooks only from its
-# shared ~/.gemini/settings.json, which we must NOT clobber — so we JSON-merge our
-# entries in (reversibly; uninstall prunes exactly ours, leaving the user's
-# settings intact). Guarded by requires_dir so it's a no-op when antigravity isn't
-# installed.
+# antigravity (the `agy` CLI, the Gemini CLI successor) loads global hooks from
+# ~/.gemini/config/hooks.json, which we JSON-merge into under a top-level "thurbox"
+# key (reversibly; uninstall prunes our key, leaving existing user hooks intact).
+# Guarded by requires_dir so it's a no-op when antigravity isn't installed.
 #
-# `agy` adopted Claude Code's hook schema (verified against agy 1.0.9): the event
-# names live in antigravity-hooks.json and map SessionStart→idle, PreToolUse→
-# working, Stop→done, and Notification→blocked (the notification's `message`
-# matched for permission/approval, like claude, so an idle Notification doesn't
-# flip the dot red). It has
-# no UserPromptSubmit, so working is signaled at the first tool call. If a future
-# agy changes the schema, fix antigravity-hooks.json (no code change needed).
+# Events: PreInvocation fires when a turn begins (maps to `working`),
+# PreToolUse on `ask_.*` tools maps to `blocked`, PostToolUse maps back to
+# `working`, and Stop fires when the loop terminates (maps to `done`).
+# Hook commands must emit a valid JSON object on stdout.
 # Identity needs $THURBOX_SESSION to reach the hook process; if agy sanitizes the
 # hook env the signal is a fail-open no-op (`|| true`).
 [[config_merges]]
-path = "~/.gemini/settings.json"
+path = "~/.gemini/config/hooks.json"
 source = "antigravity-hooks.json"
 requires_dir = "~/.gemini"
 
@@ -207,7 +203,7 @@ requires_dir = "~/.grok"
 #
 # Events: SessionStart → idle, UserPromptSubmit/PreToolUse/PostToolUse →
 # working, PermissionRequest → blocked, PermissionResult → working, Stop → done.
-# Unlike claude/antigravity the block edge is STRUCTURED (a real
+# Unlike claude/grok the block edge is STRUCTURED (a real
 # permission-request event, not a text match on a notification body) and has a
 # real clearing event, so it neither false-fires nor latches.
 #

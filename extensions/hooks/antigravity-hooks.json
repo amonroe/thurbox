@@ -1,54 +1,43 @@
 {
-  "hooks": {
-    "SessionStart": [
+  "thurbox": {
+    "PreInvocation": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "thurbox-cli session signal --state idle || true"
-          }
-        ]
+        "type": "command",
+        "command": "thurbox-cli session signal --state working >/dev/null 2>&1 || true; echo '{}'",
+        "timeout": 5
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "ask_.*",
         "hooks": [
           {
             "type": "command",
-            "command": "thurbox-cli session signal --state working || true"
+            "command": "thurbox-cli session signal --state blocked >/dev/null 2>&1 || true; echo '{\"decision\": \"allow\"}'",
+            "timeout": 5
           }
         ]
       }
     ],
     "PostToolUse": [
       {
+        "matcher": "ask_.*",
         "hooks": [
           {
             "type": "command",
-            "command": "thurbox-cli session signal --state working || true"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "case \"$(cat | sed -n 's/.*\"message\":\"\\([^\"]*\\)\".*/\\1/p')\" in *permission*|*Permission*|*approval*|*approve*) thurbox-cli session signal --state blocked ;; esac; true"
+            "command": "thurbox-cli session signal --state working >/dev/null 2>&1 || true; echo '{}'",
+            "timeout": 5
           }
         ]
       }
     ],
     "Stop": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "thurbox-cli session signal --state done || true"
-          }
-        ]
+        "type": "command",
+        "command": "thurbox-cli session signal --state done >/dev/null 2>&1 || true; echo '{}'",
+        "timeout": 5
       }
     ]
   }
 }
+

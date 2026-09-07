@@ -112,7 +112,7 @@ fn path_with(dir: &Path) -> std::ffi::OsString {
 }
 
 /// Every shell command an event's hooks carry, whichever schema the agent
-/// wraps them in: claude and antigravity nest `hooks[].command`, copilot puts
+/// wraps them in: claude nests `hooks[].command`, copilot puts
 /// a `bash`/`powershell` pair straight in the list. Only the POSIX half is run.
 fn commands_for(value: &serde_json::Value) -> Vec<String> {
     match value {
@@ -133,7 +133,11 @@ fn commands_for(value: &serde_json::Value) -> Vec<String> {
 /// stdin exactly as the agent does.
 fn fire(payload: &serde_json::Value, dir: &Path, event: &str, body: &str) {
     let path = path_with(dir);
-    let Some(hooks) = payload["hooks"].get(event) else {
+    let hooks = payload
+        .get("hooks")
+        .or_else(|| payload.get("thurbox"))
+        .and_then(|h| h.get(event));
+    let Some(hooks) = hooks else {
         return;
     };
     for command in commands_for(hooks) {
@@ -195,12 +199,6 @@ const TURNS: &[(&str, &str, [&str; 5])] = &[
         ],
     ),
     (
-        // agy adopted claude's schema, minus UserPromptSubmit.
-        "antigravity",
-        "antigravity-hooks.json",
-        ["", "PreToolUse", "Notification", "PostToolUse", "Stop"],
-    ),
-    (
         // copilot matches `permission_prompt` itself, so its notification hook
         // signals blocked unconditionally.
         "copilot",
@@ -255,7 +253,7 @@ fn granting_a_permission_puts_the_session_back_to_working() {
 /// the only thing that tells the two apart (copilot's agent matches for it).
 #[test]
 fn the_idle_nudge_is_not_a_block() {
-    for file in ["claude.json", "antigravity-hooks.json"] {
+    for file in ["claude.json"] {
         let dir = tempfile::tempdir().expect("tempdir");
         let payload = payload_json(file);
         let log = stub_cli(dir.path());
@@ -269,6 +267,45 @@ fn the_idle_nudge_is_not_a_block() {
         );
         assert_eq!(current(&log), "working", "{file}: the nudge blocked");
     }
+}
+
+/// Antigravity CLI reports working on PreInvocation and done on Stop.
+#[test]
+fn antigravity_turn_reports_working_then_done() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let payload = payload_json("antigravity-hooks.json");
+    let log = stub_cli(dir.path());
+
+    fire(&payload, dir.path(), "PreInvocation", "{}");
+    assert_eq!(current(&log), "working", "antigravity: turn starts");
+
+    fire(&payload, dir.path(), "Stop", "{}");
+    assert_eq!(current(&log), "done", "antigravity: turn ends");
+}
+
+/// Antigravity CLI reports blocked when an interactive question is asked,
+/// and working again once the user responds.
+#[test]
+fn antigravity_question_reports_blocked_then_working() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let payload = payload_json("antigravity-hooks.json");
+    let log = stub_cli(dir.path());
+
+    fire(&payload, dir.path(), "PreInvocation", "{}");
+    assert_eq!(current(&log), "working", "antigravity: turn starts");
+
+    fire(&payload, dir.path(), "PreToolUse", "{}");
+    assert_eq!(current(&log), "blocked", "antigravity: question blocks turn");
+
+    fire(&payload, dir.path(), "PostToolUse", "{}");
+    assert_eq!(
+        current(&log),
+        "working",
+        "antigravity: answering resumes turn"
+    );
+
+    fire(&payload, dir.path(), "Stop", "{}");
+    assert_eq!(current(&log), "done", "antigravity: turn ends");
 }
 
 fn have_node() -> bool {

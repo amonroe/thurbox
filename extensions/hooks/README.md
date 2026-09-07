@@ -125,17 +125,12 @@ passed by hand) and is suffixed `|| true` so it can never break the agent.
   `timeout`) and refuses to load the entire config file if it sees a fifth, so
   `kimi-hooks.toml` must never grow one.
 - **antigravity** — antigravity (the `agy` CLI, the Gemini CLI successor) loads
-  hooks only from its shared `~/.gemini/settings.json`, so we **JSON-merge** our
+  global hooks from `~/.gemini/config/hooks.json`, so we **JSON-merge** our
   entries in (a `[[config_merges]]`, guarded by `requires_dir`) without clobbering
-  your settings; uninstall prunes exactly ours back out. `agy` adopted Claude
-  Code's hook schema (verified against agy 1.0.9), so the mapping mirrors claude:
-  `SessionStart` → idle, `PreToolUse`/`PostToolUse` → working, `Stop` → done, and
-  `Notification` → blocked **only for permission/approval prompts** (the
-  `message` field alone is matched, same as claude, so an idle `Notification`
-  doesn't flip the dot red);
-  `PostToolUse` clears the block, for claude's reason. It has no
-  `UserPromptSubmit`, so working is signaled at the first tool call rather than on
-  prompt submit. **Caveat:** if agy sanitizes the hook environment,
+  your settings; uninstall prunes exactly ours back out. Events:
+  `PreInvocation` → working, `PreToolUse` (on `ask_.*` tools) → blocked,
+  `PostToolUse` → working, `Stop` → done. Hook commands emit a JSON object
+  on stdout (`{"decision": "allow"}` or `{}`). **Caveat:** if agy sanitizes the hook environment,
   `$THURBOX_SESSION` may not reach the hook, in which case the signal is a
   fail-open no-op. If a future `agy` changes the hook schema, edit
   `antigravity-hooks.json` (no code change).
@@ -240,7 +235,7 @@ other agents are wired by a reversible merge into — or a managed file dropped 
 | codex | `~/.codex/hooks.json` | reversible JSON-merge of our entries |
 | vibe | `~/.vibe/hooks.toml` | managed file (refused if you already have one) |
 | copilot | `~/.copilot/hooks/thurbox-status.json` | managed standalone file (`requires_dir`) |
-| antigravity | `~/.gemini/settings.json` | reversible JSON-merge of our entries |
+| antigravity | `~/.gemini/config/hooks.json` | reversible JSON-merge of our entries |
 | pi | `~/.pi/agent/extensions/thurbox-status.ts` | managed extension file (`requires_dir`) |
 | grok | `~/.grok/hooks/thurbox-status.json` | managed standalone file (`requires_dir`) |
 | kimi | `~/.kimi-code/config.toml` | reversible TOML-merge of our entries |
@@ -307,7 +302,7 @@ This extension exercises two extension-manifest capabilities (see
 - `[[external_files]]` — place a file into an agent's **own** config dir
   (outside the extension home), guarded by `requires_dir`.
 - `[[config_merges]]` — **reversibly deep-merge** a shipped document into an
-  agent's own *shared* config file (antigravity's `~/.gemini/settings.json`,
+  agent's own *shared* config file (antigravity's `~/.gemini/config/hooks.json`,
   kimi's `~/.kimi-code/config.toml`) without clobbering the
   user's other settings: objects/tables recurse, arrays union, and uninstall prunes
   exactly the entries we shipped. JSON recognises them by the `session signal`
@@ -321,7 +316,7 @@ This extension exercises two extension-manifest capabilities (see
   `format = "toml"` picks the TOML merge (`agent::toml_merge`, on `toml_edit`,
   so the user's comments and key order survive).
 
-  Note: on the **first** merge, thurbox rewrites `settings.json` with normalized
+  Note: on the **first** merge, thurbox rewrites the target JSON file with normalized
   formatting (alphabetized keys, 2-space indent). This is one-time and lossless —
   your values are untouched and the file is stable afterward.
 
